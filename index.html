@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CN31 Token Server</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Monaco', 'Menlo', monospace;
+            background: #0a0e27;
+            color: #00ff88;
+            padding: 20px;
+            line-height: 1.6;
+        }
+        .container { max-width: 1200px; margin: 0 auto; }
+        h1 { font-size: 2em; margin-bottom: 30px; text-shadow: 0 0 10px #00ff88; }
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        .card {
+            background: rgba(0, 50, 100, 0.3);
+            border: 1px solid #00ff88;
+            padding: 20px;
+            border-radius: 4px;
+            box-shadow: 0 0 20px rgba(0, 255, 136, 0.1);
+        }
+        .card h3 { font-size: 0.9em; color: #00ccff; margin-bottom: 10px; text-transform: uppercase; }
+        .card .value { font-size: 2em; font-weight: bold; color: #00ff88; }
+        .card .sub { font-size: 0.8em; color: #0099ff; margin-top: 5px; }
+        .endpoints {
+            background: rgba(0, 50, 100, 0.3);
+            border: 1px solid #00ff88;
+            padding: 20px;
+            border-radius: 4px;
+            margin-bottom: 30px;
+        }
+        .endpoints h3 { margin-bottom: 15px; color: #00ccff; }
+        .endpoint-item {
+            padding: 8px 0;
+            border-bottom: 1px solid rgba(0, 255, 136, 0.2);
+            font-size: 0.9em;
+        }
+        .endpoint-item:last-child { border-bottom: none; }
+        .method { color: #ff00ff; font-weight: bold; }
+        .path { color: #00ff88; }
+        button {
+            background: #00ff88;
+            color: #0a0e27;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            font-weight: bold;
+            cursor: pointer;
+            margin-top: 20px;
+            font-family: 'Monaco', monospace;
+        }
+        button:hover { background: #00ccff; }
+        #output {
+            background: #000;
+            border: 1px solid #00ff88;
+            padding: 15px;
+            border-radius: 4px;
+            margin-top: 20px;
+            max-height: 300px;
+            overflow-y: auto;
+            font-size: 0.85em;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>⚡ CN31 Token Server</h1>
+        
+        <div class="grid" id="stats">
+            <div class="card">
+                <h3>Queue Size</h3>
+                <div class="value" id="queue-size">—</div>
+            </div>
+            <div class="card">
+                <h3>Total Served</h3>
+                <div class="value" id="total-served">—</div>
+            </div>
+            <div class="card">
+                <h3>Tokens/Min</h3>
+                <div class="value" id="tpm">—</div>
+            </div>
+            <div class="card">
+                <h3>Uptime</h3>
+                <div class="value" id="uptime">—</div>
+            </div>
+        </div>
+
+        <div class="endpoints">
+            <h3>API Endpoints</h3>
+            <div class="endpoint-item"><span class="method">GET</span> <span class="path">/health</span> — Server status</div>
+            <div class="endpoint-item"><span class="method">GET</span> <span class="path">/get-token</span> — Fetch one token</div>
+            <div class="endpoint-item"><span class="method">GET</span> <span class="path">/api/token/bulk?n=10</span> — Fetch N tokens</div>
+            <div class="endpoint-item"><span class="method">POST</span> <span class="path">/save-token</span> — Add token to pool</div>
+            <div class="endpoint-item"><span class="method">GET</span> <span class="path">/stats</span> — Full statistics</div>
+        </div>
+
+        <button onclick="refresh()">Refresh Stats</button>
+        <div id="output"></div>
+    </div>
+
+    <script>
+        const API = window.location.origin;
+        const out = (msg) => {
+            const el = document.getElementById('output');
+            el.textContent += msg + '\n';
+            el.scrollTop = el.scrollHeight;
+        };
+
+        async function refresh() {
+            try {
+                const res = await fetch(`${API}/stats`);
+                const data = await res.json();
+                
+                document.getElementById('queue-size').textContent = data.queue_size || 0;
+                document.getElementById('total-served').textContent = data.total_served || 0;
+                document.getElementById('tpm').textContent = (data.tokens_per_minute || 0).toFixed(1);
+                document.getElementById('uptime').textContent = (data.uptime_seconds || 0).toFixed(1) + 's';
+                
+                out(`[${new Date().toLocaleTimeString()}] Queue: ${data.queue_size} | Served: ${data.total_served} | Peak: ${data.peak_queue}`);
+            } catch (e) {
+                out('Error: ' + e.message);
+            }
+        }
+
+        refresh();
+        setInterval(refresh, 2000);
+    </script>
+</body>
+</html>

@@ -1,0 +1,23 @@
+FROM python:3.11-slim
+
+WORKDIR /app
+
+# Install system dependencies for opencv
+RUN apt-get update && apt-get install -y \
+    libsm6 libxext6 libxrender-dev \
+    && rm -rf /var/lib/apt/lists/*
+
+# Copy requirements and install
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Copy application
+COPY app.py .
+COPY index.html .
+COPY Procfile .
+
+# Expose port
+EXPOSE 10000
+
+# Run gunicorn
+CMD ["gunicorn", "app:app", "--bind", "0.0.0.0:10000", "--workers", "1", "--threads", "8", "--timeout", "120"]
